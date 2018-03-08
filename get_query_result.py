@@ -77,7 +77,8 @@ if __name__== '__main__':
             continue
         if break_point!=0:
             prefix=break_point
-        while prefix<(prefix+100000):
+            prefix_limit=prefix+100000
+        while prefix<prefix_limit:
             try:
                 proxy=get_proxy(proxies_list)
                 city_name,phone_num_type=get_city_name(prefix,proxy)
