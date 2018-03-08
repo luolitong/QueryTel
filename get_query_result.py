@@ -4,6 +4,7 @@ import random
 import pymysql
 from lxml import etree
 from header_list import user_agent
+from phone_prefix_list import phone_prefix
 from get_proxies import get_proxies_with_limit
 
 
@@ -38,10 +39,6 @@ def get_proxy(proxies_list):
     return proxy_dict
 
 
-def delete_proxy(proxy,proxies_list):
-    proxies_list.remove(proxy)
-
-
 def create_conn(host,user_name,password,db_name):
     conn = pymysql.connect(host, user_name, password, db_name,charset='utf8')
     return conn
@@ -56,23 +53,43 @@ def save_query_result(phone_num_prefix,city_name,phone_num_type,conn):
     conn.commit()
 
 
+def check_break_point():
+    with open('position.txt','r') as f:
+        break_point=f.readline()
+        return int(break_point)
+
+
 def save_break_position(break_position):
     with open('position.txt','w') as f:
         f.writelines(break_position)
+
+
 if __name__== '__main__':
     conn=create_conn('localhost','root','666666','test')
     proxies_list=get_proxies_with_limit(1)
-    phone_num_prefix=1300000
-    while phone_num_prefix<1400000:
-        try:
-            proxy=get_proxy(proxies_list)
-            city_name,phone_num_type=get_city_name(phone_num_prefix,proxy)
-            save_query_result(phone_num_prefix,city_name,phone_num_type,cursor)
-            phone_num_prefix+=1
-        except requests.exceptions.ProxyError:
-            delete_proxy(proxies_list[0],proxies_list)
-        except Exception as e:
-            save_break_position(phone_num_prefix)
-            print('Unexpected Error: {}'.format(e))
+    break_point = 0
+    try:
+        break_point = check_break_point()
+    except:
+        pass
+    for prefix in phone_prefix:
+        if break_point<prefix:
+            continue
+        if break_point!=0:
+            prefix=break_point
+        while prefix<(prefix+100000):
+            try:
+                proxy=get_proxy(proxies_list)
+                city_name,phone_num_type=get_city_name(prefix,proxy)
+                save_query_result(prefix,city_name,phone_num_type,conn)
+                prefix+=1
+            except requests.exceptions.ProxyError:
+                proxies_list.remove(proxies_list[0])
+            except TypeError as e:
+                print('Tyoe Error: {}'.format(e))
+            except Exception as e:
+                save_break_position(prefix)
+                print('Unexpected Error: {}'.format(e))
+    conn.close()
 
 
