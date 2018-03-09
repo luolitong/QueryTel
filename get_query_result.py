@@ -59,9 +59,15 @@ def check_break_point():
         return int(break_point)
 
 
+def get_prefix_limit(prefix):
+    num=int(prefix/100000)+1
+    num=num*100000
+    return num
+
+
 def save_break_position(break_position):
     with open('position.txt','w') as f:
-        f.writelines(break_position)
+        f.write(str(break_position))
 
 
 if __name__== '__main__':
@@ -76,20 +82,24 @@ if __name__== '__main__':
         if break_point<prefix:
             continue
         if break_point!=0:
-            prefix=break_point
-            prefix_limit=prefix+100000
+            prefix = break_point
+            prefix_limit = get_prefix_limit(prefix)
         while prefix<prefix_limit:
             try:
                 proxy=get_proxy(proxies_list)
                 city_name,phone_num_type=get_city_name(prefix,proxy)
                 save_query_result(prefix,city_name,phone_num_type,conn)
                 prefix+=1
+            except ConnectionResetError:
+                proxies_list.remove(proxies_list[0])
+                save_break_position(prefix)
             except requests.exceptions.ProxyError:
                 proxies_list.remove(proxies_list[0])
             except TypeError as e:
                 print('Tyoe Error: {}'.format(e))
             except Exception as e:
                 save_break_position(prefix)
+                proxies_list.remove(proxies_list[0])
                 print('Unexpected Error: {}'.format(e))
     conn.close()
 
